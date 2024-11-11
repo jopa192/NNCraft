@@ -10,6 +10,8 @@ class NeuralNetwork:
         self.loss = None
         
     def add_layer(self, layer) -> None:
+        if len(self.layers) == 0 and not hasattr(layer, "weights"):
+            raise ValueError("First layer must be Linear")
         self.layers.append(layer)
         
     def config(self, loss_func) -> None:
@@ -21,8 +23,8 @@ class NeuralNetwork:
         for epoch in range(1, n_epochs+1):
             output = self.forward(X)
             
-            loss = self.loss.forward(output, y)
-            accuracy = np.mean((output > 0.5).astype(int) == y).item()
+            self.loss.forward(output, y)
+            accuracy = np.mean((np.argmax(output, axis=1) == np.argmax(y, axis=1)).astype(int))
             
             self.backward()
             
@@ -32,7 +34,7 @@ class NeuralNetwork:
                     layer.biases  -= lr * layer.d_biases
             
             if epoch % print_every == 0:
-                print(f"Epoch {epoch} : loss {np.mean(loss)}, accuracy {accuracy*100:.2f}%")
+                print(f"Epoch {epoch} : loss {np.mean(self.loss.output)}, accuracy {accuracy*100:.2f}%")
         
     def forward(self, inputs: np.ndarray) -> np.ndarray:
         output = inputs.copy()
@@ -42,41 +44,11 @@ class NeuralNetwork:
         return output
     
     def backward(self) -> None:
-        d_output = self.loss.backward()
+        self.loss.backward()
+        d_output = self.loss.d_output
         for layer in reversed(self.layers):
             layer.backward(d_output)
             d_output = layer.d_output
             
-
-
-
-
-X, y = make_circles(n_samples=500, noise=0.1)
-y = y.reshape(-1, 1)
-
-n_features = X.shape[1]
-n_output = y.shape[1]
-
-model = NeuralNetwork()
-
-model.add_layer(layers.Linear(n_features, 128))
-model.add_layer(layers.ReLU())
-model.add_layer(layers.Linear(128, 128))
-model.add_layer(layers.ReLU())
-model.add_layer(layers.Linear(128, n_output))
-model.add_layer(layers.Sigmoid())
-
-model.config(losses.BinaryCrossEntropyLoss())
-
-model.train(X, y, 20000, 0.05, 1000)
-
-output = model.forward(X)
-preds = (output > 0.5).astype(int)
-
-plt.figure(1)
-plt.scatter(X[np.where(preds==0), 0], X[np.where(preds==0), 1], c="r")
-plt.scatter(X[np.where(preds==1), 0], X[np.where(preds==1), 1], c="g")
-plt.figure(2)
-plt.scatter(X[np.where(y==0), 0], X[np.where(y==0), 1], c="r")
-plt.scatter(X[np.where(y==1), 0], X[np.where(y==1), 1], c="g")
-plt.show()
+    def __call__(self, X: np.ndarray):
+        return self.forward(X)
