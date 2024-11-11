@@ -1,7 +1,5 @@
 import numpy as np
-import warnings
 
-warnings.filterwarnings("error")
     
 class BinaryCrossEntropyLoss:
     
@@ -23,7 +21,6 @@ class BinaryCrossEntropyLoss:
     
     def __str__(self):
         return "[Binary Cross-Entropy]"
-    
     
     
 class CategoricalCrossEntropyLoss:
@@ -63,3 +60,59 @@ class CategoricalCrossEntropyLoss:
         
         # Average gradient over the batch
         self.d_output = grad / N
+
+
+class MeanSquaredError:
+    
+    def forward(self, y_pred: np.ndarray, y_true: np.ndarray) -> None:
+        self.output = np.mean((y_pred - y_true) ** 2)
+        
+        self.y_pred = y_pred
+        self.y_true = y_true
+    
+    def backward(self) -> None:
+        N = self.y_pred.shape[0]
+        self.d_output = (2 / N) * (self.y_pred - self.y_true)
+      
+        
+class MeanAbsoluteError:
+    
+    def forward(self, y_pred: np.ndarray, y_true: np.ndarray) -> None:
+        self.output = np.mean(np.abs(y_true - y_pred))
+        
+        self.y_pred = y_pred
+        self.y_true = y_true
+    
+    def backward(self) -> None:
+        N = self.y_true.shape[0]
+    
+        self.d_output = -((self.y_true - self.y_pred) / (abs(self.y_true - self.y_pred) + 10**-100)) / N
+        
+
+class HuberLoss:
+    
+    def __init__(self, delta: float = 1.0):
+        self.delta = delta
+        
+    def forward(self, y_pred: np.ndarray, y_true: np.ndarray) -> None:
+        error = y_pred - y_true
+        abs_error = np.abs(error)
+        
+        # Compute Huber loss
+        loss = np.where(abs_error <= self.delta,
+                        0.5 * error**2,  
+                        self.delta * (abs_error - 0.5 * self.delta))  
+        self.output = np.mean(loss)  
+        
+        self.y_pred = y_pred
+        self.y_true = y_true
+    
+    def backward(self) -> None:
+        error = self.y_pred - self.y_true
+        abs_error = np.abs(error)
+        
+        grad = np.where(abs_error <= self.delta,
+                        error,
+                        self.delta * np.sign(error)) 
+        
+        self.d_output = grad / self.y_pred.shape[0]

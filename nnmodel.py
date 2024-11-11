@@ -24,7 +24,6 @@ class NeuralNetwork:
             output = self.forward(X)
             
             self.loss.forward(output, y)
-            accuracy = np.mean((np.argmax(output, axis=1) == np.argmax(y, axis=1)).astype(int))
             
             self.backward()
             
@@ -34,7 +33,7 @@ class NeuralNetwork:
                     layer.biases  -= lr * layer.d_biases
             
             if epoch % print_every == 0:
-                print(f"Epoch {epoch} : loss {np.mean(self.loss.output)}, accuracy {accuracy*100:.2f}%")
+                print(f"Epoch {epoch} : loss {np.mean(self.loss.output)}")
         
     def forward(self, inputs: np.ndarray) -> np.ndarray:
         output = inputs.copy()
