@@ -1,7 +1,37 @@
 import numpy as np
 
+
+class Loss:
+    """Base class for all loss functions."""
     
-class BinaryCrossEntropyLoss:
+    def forward(self, y_pred: np.ndarray, y_true: np.ndarray) -> None:
+        """
+        Forward pass for loss calculation. Needs to be implemented by subclasses.
+        
+        Args:
+        - y_pred: Predicted values (e.g., probabilities, outputs from the network).
+        - y_true: True values.
+        """
+        raise NotImplementedError("The forward method must be implemented by the subclass.")
+    
+    def backward(self) -> np.ndarray:
+        """
+        Backward pass for loss gradient calculation. Needs to be implemented by subclasses.
+        
+        Returns:
+        - Gradient of the loss with respect to the input (same shape as y_pred).
+        """
+        raise NotImplementedError("The backward method must be implemented by the subclass.")
+    
+    def __str__(self):
+        return f"[{self.__class__.__name__}]"
+
+
+    
+class BinaryCrossEntropyLoss(Loss):
+    
+    """Used for binary classification tasks, where each prediction is either 0 or 1.
+    """
     
     def forward(self, y_pred: np.ndarray, y_true: np.ndarray) -> None:
         y_pred = np.clip(y_pred, 1e-9, 1 - 1e-9)
@@ -19,11 +49,11 @@ class BinaryCrossEntropyLoss:
         
         self.d_output = -((self.y_true / self.y_pred) - ((1 - self.y_true) / (1 - self.y_pred))) / n_outputs
     
-    def __str__(self):
-        return "[Binary Cross-Entropy]"
     
+class CategoricalCrossEntropyLoss(Loss):
     
-class CategoricalCrossEntropyLoss:
+    """Used for multi-class classification tasks, where each prediction corresponds to one class out of multiple classes.
+    """
     
     def forward(self, y_pred: np.ndarray, y_true: np.ndarray) -> None:
         
@@ -62,7 +92,10 @@ class CategoricalCrossEntropyLoss:
         self.d_output = grad / N
 
 
-class MeanSquaredError:
+class MeanSquaredError(Loss):
+    
+    """Used for regression tasks, measuring the average squared difference between predicted and true values.
+    """
     
     def forward(self, y_pred: np.ndarray, y_true: np.ndarray) -> None:
         self.output = np.mean((y_pred - y_true) ** 2)
@@ -75,7 +108,10 @@ class MeanSquaredError:
         self.d_output = (2 / N) * (self.y_pred - self.y_true)
       
         
-class MeanAbsoluteError:
+class MeanAbsoluteError(Loss):
+    
+    """Used for regression tasks, it calculates the average of the absolute differences between predicted and true values.
+    """
     
     def forward(self, y_pred: np.ndarray, y_true: np.ndarray) -> None:
         self.output = np.mean(np.abs(y_true - y_pred))
@@ -89,9 +125,15 @@ class MeanAbsoluteError:
         self.d_output = -((self.y_true - self.y_pred) / (abs(self.y_true - self.y_pred) + 10**-100)) / N
         
 
-class HuberLoss:
+class HuberLoss(Loss):
     
     def __init__(self, delta: float = 1.0):
+        """A hybrid loss function that combines the best features of MSE and MAE, providing robustness to outliers while remaining differentiable at all points.
+
+        Args:
+            delta (float, optional): Transition point between MSE and MAE behavior. Defaults to 1.0.
+        """
+        
         self.delta = delta
         
     def forward(self, y_pred: np.ndarray, y_true: np.ndarray) -> None:
