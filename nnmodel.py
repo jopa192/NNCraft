@@ -2,6 +2,7 @@ import numpy as np
 from typing import Type
 from layers import Layer
 from losses import Loss
+from data_utils import DataLoader
 
 
 class NeuralNetwork:
@@ -35,32 +36,35 @@ class NeuralNetwork:
         
         self.loss = loss_func
         
-    def train(self, X: np.ndarray, y: np.ndarray, n_epochs: int, 
+    def train(self, data: DataLoader, n_epochs: int, 
               lr: float=1e-3, print_every: int=1) -> None:
         """Trains the neural network using the provided dataset for a specified number of epochs with backpropagation.
 
         Args:
-            X (np.ndarray): The input data.
-            y (np.ndarray): The true labels.
+            data (DataLoader): Data loader containig feature data and target values.
             n_epochs (int): Number of epochs to train the network.
-            lr (float, optional): The learning rate.. Defaults to 1e-3.
-            print_every (int, optional):  how often the training info is printed. Defaults to 1.
+            lr (float, optional): The learning rate. Defaults to 1e-3.
+            print_every (int, optional): How often the training info is printed. Defaults to 1.
         """
         
         for epoch in range(1, n_epochs+1):
-            output = self.forward(X)
-            
-            self.loss.forward(output, y)
-            
-            self.backward()
-            
-            for layer in self.layers:
-                if hasattr(layer, "d_weights"):
-                    layer.weights -= lr * layer.d_weights
-                    layer.biases  -= lr * layer.d_biases
-            
+            running_loss = 0.
+            for X, y in data:
+                output = self.forward(X)
+                
+                self.loss.forward(output, y)
+                
+                self.backward()
+                
+                for layer in self.layers:
+                    if hasattr(layer, "d_weights"):
+                        layer.weights -= lr * layer.d_weights
+                        layer.biases  -= lr * layer.d_biases
+                        
+                running_loss += np.mean(self.loss.output).item()
+                
             if epoch % print_every == 0:
-                print(f"Epoch {epoch} : loss {np.mean(self.loss.output)}")
+                print(f"Epoch {epoch} : loss {running_loss / len(data)}")
         
     def forward(self, inputs: np.ndarray) -> np.ndarray:
         """Performs a forward pass through the network by propagating inputs through each layer.
