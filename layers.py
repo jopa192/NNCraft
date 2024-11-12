@@ -11,7 +11,7 @@ class Layer:
         """Backward pass, should be implemented by subclasses."""
         raise NotImplementedError
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         """String representation of the layer."""
         raise NotImplementedError
 
@@ -54,7 +54,7 @@ class Linear(Layer):
         
         self.d_output = d_inputs @ self.weights.T
     
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f"[Dense Layer, input_size: {self.input_size}, n_neurons: {self.output_size}]"
     
 
@@ -83,7 +83,7 @@ class Sigmoid(Layer):
         sigmoid_derivative = self.output * (1 - self.output)
         self.d_output = d_inputs * sigmoid_derivative 
     
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return "[Sigmoid Activation]"
     
     
@@ -112,7 +112,7 @@ class ReLU(Layer):
         relu_derivative = np.where(self.inputs > 0, 1, 0)
         self.d_output = d_inputs * relu_derivative
     
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return "[ReLU Activation]"
     
     
