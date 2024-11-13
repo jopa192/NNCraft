@@ -58,3 +58,37 @@ def normalize(X: np.ndarray) -> np.ndarray:
     """
     
     return (X - np.min(X)) / (np.max(X) - np.min(X))
+
+    
+def partition_data(X: np.ndarray, y: np.ndarray, test_size: float, random_seed=None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """plits the dataset into training and test sets.
+
+    Args:
+        X (np.ndarray): The feature matrix.
+        y (np.ndarray): The target vector.
+        test_size (float): The proportion of the dataset to include in the test split.
+        random_seed (_type_, optional): The random seed for shuffling the data. Defaults to None.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: The split data arrays (X_train, X_test, y_train, y_test).
+    """
+    
+    if random_seed is not None:
+        np.random.seed(random_seed)
+    
+    # Get the number of samples
+    n_samples = X.shape[0]
+    
+    # Shuffle indices
+    indices = np.random.permutation(n_samples)
+    
+    # Determine the split point
+    test_set_size = int(n_samples * test_size)
+    test_indices = indices[:test_set_size]
+    train_indices = indices[test_set_size:]
+    
+    # Split the data
+    X_train, X_test = X[train_indices], X[test_indices]
+    y_train, y_test = y[train_indices], y[test_indices]
+    
+    return X_train, X_test, y_train, y_test
