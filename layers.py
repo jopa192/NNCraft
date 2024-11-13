@@ -5,11 +5,11 @@ class Layer:
     
     def forward(self, inputs: np.ndarray) -> None:
         """Forward pass, should be implemented by subclasses."""
-        raise NotImplementedError
+        raise NotImplementedError("Forward pass should be implemented by subclasses.")
 
     def backward(self, d_inputs: np.ndarray) -> None:
         """Backward pass, should be implemented by subclasses."""
-        raise NotImplementedError
+        raise NotImplementedError("Backward pass should be implemented by subclasses.")
 
     def __repr__(self) -> str:
         """String representation of the layer."""

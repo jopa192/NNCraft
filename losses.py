@@ -37,9 +37,9 @@ class BinaryCrossEntropyLoss(Loss):
         y_pred = np.clip(y_pred, 1e-9, 1 - 1e-9)
         
         losses = -(y_true * np.log(y_pred) + (1.-y_true) * np.log(1.-y_pred))
-        loss = np.mean(losses, axis=-1)
+        loss = np.mean(losses, axis=0)
         
-        self.output = loss
+        self.output = loss.item()
         
         self.y_pred = y_pred
         self.y_true = y_true      

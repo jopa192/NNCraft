@@ -1,7 +1,8 @@
 import numpy as np
-from typing import Type
+from typing import Type, List
 from layers import Layer
 from losses import Loss
+from optimizers import Optimizer
 from data_utils import DataLoader
 
 
@@ -10,8 +11,9 @@ class NeuralNetwork:
         """Initializes the neural network by setting up an empty list for layers and a placeholder for the loss function.
         """
         
-        self.layers = []
-        self.loss = None
+        self.layers: List[Type[Layer]] = []
+        self.loss: Type[Loss] = None
+        self.optimizer: Type[Optimizer] = None
         
     def add_layer(self, layer: Type[Layer]) -> None:
         """Adds a layer to the neural network. The first layer must be a linear layer.
@@ -27,41 +29,37 @@ class NeuralNetwork:
             raise ValueError("First layer must be Linear")
         self.layers.append(layer)
         
-    def config(self, loss_func: Type[Loss]) -> None:
+    def config(self, loss_func: Type[Loss], optimizer: Type[Optimizer]) -> None:
         """Configures the neural network with a loss function for training
 
         Args:
             loss_func (Type[Loss]): The loss function class to be used for training.
         """
         
-        self.loss = loss_func
+        self.loss: Type[Loss] = loss_func
+        self.optimizer: Type[Optimizer] = optimizer
         
-    def train(self, data: DataLoader, n_epochs: int, 
-              lr: float=1e-3, print_every: int=1) -> None:
+    def train(self, data: DataLoader, n_epochs: int, print_every: int=1) -> None:
         """Trains the neural network using the provided dataset for a specified number of epochs with backpropagation.
 
         Args:
             data (DataLoader): Data loader containig feature data and target values.
             n_epochs (int): Number of epochs to train the network.
-            lr (float, optional): The learning rate. Defaults to 1e-3.
             print_every (int, optional): How often the training info is printed. Defaults to 1.
         """
         
         for epoch in range(1, n_epochs+1):
             running_loss = 0.
-            for X, y in data:
-                output = self.forward(X)
+            for sample_batch, target in data:
+                output = self.forward(sample_batch)
                 
-                self.loss.forward(output, y)
+                self.loss.forward(output, target)
                 
                 self.backward()
                 
-                for layer in self.layers:
-                    if hasattr(layer, "d_weights"):
-                        layer.weights -= lr * layer.d_weights
-                        layer.biases  -= lr * layer.d_biases
+                self.optimizer.gradient_step()
                         
-                running_loss += np.mean(self.loss.output).item()
+                running_loss += self.loss.output
                 
             if epoch % print_every == 0:
                 print(f"Epoch {epoch} : loss {running_loss / len(data)}")
