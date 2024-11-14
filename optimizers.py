@@ -137,14 +137,14 @@ class AdaDelta(Optimizer):
             
             
 class RMSprop(Optimizer):
-    def __init__(self, learning_rate: float, layers: List[Type[Layer]], rho: float = 0.9, epsilon: float = 1e-8) -> None:
+    def __init__(self, learning_rate: float, layers: List[Type[Layer]], rho: float = 0.9, epsilon: float = 1e-9) -> None:
         """Adaptive learning rate optimization algorithm, similar to AdaGrad and AdaDelta, but designed specifically to address AdaGrad's rapid decay in learning rate.
 
         Args:
             learning_rate (float): Tuning parameter determines the step size at each iteration while moving toward a minimum of a loss.
             layers (List[Type[Layer]]): Layers of the model.
             rho (float, optional): Decay rate. Defaults to 0.9.
-            epsilon (float, optional): A small constant to prevent division by zero when adjusting gradients. Defaults to 1e-8.
+            epsilon (float, optional): A small constant to prevent division by zero when adjusting gradients. Defaults to 1e-9.
         """
         super().__init__(learning_rate, layers)
         self.rho = rho
@@ -168,3 +168,60 @@ class RMSprop(Optimizer):
             
             # Store updated accumulated gradients
             self.squared_gradients[i] = (accum_grad_weights, accum_grad_biases)
+            
+
+class Adam(Optimizer):
+    def __init__(self, learning_rate: float, layers: List[Type[Layer]], beta1: float = 0.9, beta2: float = 0.999, epsilon: float = 1e-9) -> None:
+        """Adam (Adaptive Moment Estimation) is an optimization algorithm that combines the advantages of two other popular optimization algorithms: Momentum and RMSprop.
+
+        Args:
+            learning_rate (float): Tuning parameter determines the step size at each iteration while moving toward a minimum of a loss.
+            layers (List[Type[Layer]]): Layers of the model.
+            beta1 (float, optional): Decay rate for the moving averages of the first moment . Defaults to 0.9.
+            beta2 (float, optional): Decay rate for the moving averages of the second moment. Defaults to 0.999.
+            epsilon (float, optional): A small constant to prevent division by zero when adjusting gradients. Defaults to 1e-9.
+        """
+        super().__init__(learning_rate, layers)
+        
+        self.beta1 = beta1
+        self.beta2 = beta2
+        self.epsilon = epsilon
+        
+        # Initialize moment estimates
+        self.m = [(np.zeros_like(layer.weights), np.zeros_like(layer.biases)) for layer in self.trainable]
+        self.v = [(np.zeros_like(layer.weights), np.zeros_like(layer.biases)) for layer in self.trainable]
+        self.t = 0  # Time step (used for bias correction)
+
+    def gradient_step(self) -> None:
+        self.t += 1  # Increment time step
+
+        for i, (layer, (m_w, m_b), (v_w, v_b)) in enumerate(zip(self.trainable, self.m, self.v)):
+            # Update biased first moment estimate (m)
+            m_w = self.beta1 * m_w + (1 - self.beta1) * layer.d_weights
+            m_b = self.beta1 * m_b + (1 - self.beta1) * layer.d_biases
+
+            # Update biased second moment estimate (v)
+            v_w = self.beta2 * v_w + (1 - self.beta2) * (layer.d_weights ** 2)
+            v_b = self.beta2 * v_b + (1 - self.beta2) * (layer.d_biases ** 2)
+
+            # Correct bias for first moment estimate (m_hat)
+            m_hat_w = m_w / (1 - self.beta1 ** self.t)
+            m_hat_b = m_b / (1 - self.beta1 ** self.t)
+
+            # Correct bias for second moment estimate (v_hat)
+            v_hat_w = v_w / (1 - self.beta2 ** self.t)
+            v_hat_b = v_b / (1 - self.beta2 ** self.t)
+
+            # Reshape m_hat and v_hat to match layer weights and biases shapes
+            m_hat_w = np.reshape(m_hat_w, layer.weights.shape)
+            m_hat_b = np.reshape(m_hat_b, layer.biases.shape)
+            v_hat_w = np.reshape(v_hat_w, layer.weights.shape)
+            v_hat_b = np.reshape(v_hat_b, layer.biases.shape)
+
+            # Update the weights and biases
+            layer.weights -= self.learning_rate * m_hat_w / (np.sqrt(v_hat_w) + self.epsilon)
+            layer.biases -= self.learning_rate * m_hat_b / (np.sqrt(v_hat_b) + self.epsilon)
+
+            # Update moment estimates
+            self.m[i] = (m_w, m_b)
+            self.v[i] = (v_w, v_b)
