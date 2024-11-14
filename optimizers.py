@@ -3,6 +3,7 @@ from typing import Type, List, Tuple
 from layers import Layer, Linear
 
 class Optimizer:
+    
     def __init__(self, learning_rate: float, layers: List[Type[Layer]]) -> None:
         """algorithm used to change the attributes of neural network (like weights and learning rate) to reduce the losses.
 
@@ -19,6 +20,7 @@ class Optimizer:
 
 
 class SGD(Optimizer):
+    
     def __init__(self, learning_rate: float, layers: List[Type[Layer]], momentum: float = 0) -> None:
         """Stochastic Gradient Descent updates the model's weights by taking small steps proportional to the negative gradient of the loss function
 
@@ -33,7 +35,6 @@ class SGD(Optimizer):
         self.momentum_parameters: List[Tuple[np.ndarray, np.ndarray]] = [
             (np.zeros_like(layer.weights), np.zeros_like(layer.biases)) for layer in self.trainable
         ]
-            
                 
     def gradient_step(self) -> None:
         """Updates the parameters (weights and biases) of a model based on the gradients calculated during backpropagation.
@@ -52,7 +53,8 @@ class SGD(Optimizer):
             
     
 class AdaGrad(Optimizer):
-    def __init__(self, learning_rate: float, layers: List[Type[Layer]], epsilon: float=1e-9) -> None:
+    
+    def __init__(self, learning_rate: float, layers: List[Type[Layer]], epsilon: float = 1e-9) -> None:
         """Optimizer that adapts the learning rate for each parameter by accumulating the square of gradients over time
 
         Args:
@@ -80,3 +82,55 @@ class AdaGrad(Optimizer):
             layer.biases -= self.learning_rate * layer.d_biases / (np.sqrt(sum_squared_biases) + self.e)
             
             self.squared_gradients[i] = (sum_squared_weights, sum_squared_biases)
+            
+
+class AdaDelta(Optimizer):
+    
+    def __init__(self, learning_rate: float, layers: List[Type[Layer]], decay: float = 0.95, epsilon: float = 1e-9) -> None:
+        """AdaDelta is an adaptive learning rate optimization algorithm that extends AdaGrad to overcome one of its key limitations: the rapid decrease in effective learning rate as gradients accumulate.
+
+        Args:
+            learning_rate (float): Tuning parameter determines the step size at each iteration while moving toward a minimum of a loss.
+            layers (List[Type[Layer]]): Layers of the model.
+            decay (float, optional): Decay rate. Defaults to 0.95.
+            epsilon (float, optional): A small constant to prevent division by zero when adjusting gradients. Defaults to 1e-9.
+        """
+        super().__init__(learning_rate, layers)
+        self.decay = decay
+        self.e = epsilon
+        
+        # Initialize accumulated gradient and update arrays
+        self.accumulated_gradients: List[Tuple[np.ndarray, np.ndarray]] = [
+            (np.zeros_like(layer.weights), np.zeros_like(layer.biases)) for layer in self.trainable
+        ]
+        
+        self.accumulated_updates: List[Tuple[np.ndarray, np.ndarray]] = [
+            (np.zeros_like(layer.weights), np.zeros_like(layer.biases)) for layer in self.trainable
+        ]
+        
+        
+    def gradient_step(self) -> None:
+        """Performs a single step of gradient descent using adjusted learning rate. Instead of directly scaling the learning rate by the gradient, AdaDelta scales it based on past updates, normalizing the step size according to an adaptive learning rate per parameter.
+        """
+        for i, (layer, (acc_grad_weights, acc_grad_biases), (acc_update_weights, acc_update_biases)) in \
+            enumerate(zip(self.trainable, self.accumulated_gradients, self.accumulated_updates)):
+            
+            # Update accumulated gradients with the current gradients
+            acc_grad_weights = self.decay * acc_grad_weights + (1 - self.decay) * layer.d_weights ** 2
+            acc_grad_biases = self.decay * acc_grad_biases + (1 - self.decay) * layer.d_biases ** 2
+            
+            # Calculate parameter update values
+            update_weights = - (np.sqrt(acc_update_weights + self.e) / np.sqrt(acc_grad_weights + self.e)) * layer.d_weights
+            update_biases = - (np.sqrt(acc_update_biases + self.e) / np.sqrt(acc_grad_biases + self.e)) * layer.d_biases
+            
+            # Apply updates to weights and biases
+            layer.weights += update_weights
+            layer.biases += update_biases
+            
+            # Update accumulated updates with the calculated updates
+            acc_update_weights = self.decay * acc_update_weights + (1 - self.decay) * update_weights ** 2
+            acc_update_biases = self.decay * acc_update_biases + (1 - self.decay) * update_biases ** 2
+            
+            # Store the updated accumulated values
+            self.accumulated_gradients[i] = (acc_grad_weights, acc_grad_biases)
+            self.accumulated_updates[i] = (acc_update_weights, acc_update_biases)
