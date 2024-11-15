@@ -4,7 +4,7 @@ import numpy as np
 class Loss:
     """Base class for all loss functions."""
     
-    def forward(self, y_pred: np.ndarray, y_true: np.ndarray) -> None:
+    def forward(self, y_pred: np.ndarray, y_true: np.ndarray, val: bool) -> None:
         """
         Forward pass for loss calculation. Needs to be implemented by subclasses.
         
@@ -33,7 +33,7 @@ class BinaryCrossEntropyLoss(Loss):
     """Used for binary classification tasks, where each prediction is either 0 or 1.
     """
     
-    def forward(self, y_pred: np.ndarray, y_true: np.ndarray) -> None:
+    def forward(self, y_pred: np.ndarray, y_true: np.ndarray, val: bool = False) -> None:
         y_pred = np.clip(y_pred, 1e-9, 1 - 1e-9)
         
         losses = -(y_true * np.log(y_pred) + (1.-y_true) * np.log(1.-y_pred))
@@ -41,8 +41,9 @@ class BinaryCrossEntropyLoss(Loss):
         
         self.output = loss.item()
         
-        self.y_pred = y_pred
-        self.y_true = y_true      
+        if not val:
+            self.y_pred = y_pred
+            self.y_true = y_true      
     
     def backward(self) -> np.ndarray:        
         n_outputs = self.y_pred.shape[0]

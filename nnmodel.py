@@ -38,8 +38,17 @@ class NeuralNetwork:
         
         self.loss: Type[Loss] = loss_func
         self.optimizer: Type[Optimizer] = optimizer
+    
+    @staticmethod
+    def monitor_progress(epoch: int, loss: float, val_loss: float):
+        print_str = f"Epoch {epoch} : loss {loss} "
         
-    def train(self, data: DataLoader, n_epochs: int, print_every: int=1) -> None:
+        if val_loss is not None:
+            print_str += f"val loss {val_loss}"
+            
+        print(print_str)
+        
+    def train(self, train_data: DataLoader, n_epochs: int, val_data: DataLoader = None, print_every: int=1) -> None:
         """Trains the neural network using the provided dataset for a specified number of epochs with backpropagation.
 
         Args:
@@ -50,7 +59,8 @@ class NeuralNetwork:
         
         for epoch in range(1, n_epochs+1):
             running_loss = 0.
-            for sample_batch, target in data:
+            running_val_loss = 0.
+            for sample_batch, target in train_data:
                 output = self.forward(sample_batch)
                 
                 self.loss.forward(output, target)
@@ -58,11 +68,22 @@ class NeuralNetwork:
                 self.backward()
                 
                 self.optimizer.gradient_step()
+                
+                if val_data is not None:
+                    for val_sample_batch, val_target in val_data:
+                        val_output = self.forward(val_sample_batch)
+                        
+                        self.loss.forward(val_output, val_target, val=True)
+                        
+                        running_val_loss += self.loss.output
                         
                 running_loss += self.loss.output
                 
+            train_loss = running_loss / len(train_data)
+            val_loss = running_val_loss / len(val_data) if val_data is not None else None
+                
             if epoch % print_every == 0:
-                print(f"Epoch {epoch} : loss {running_loss / len(data)}")
+                self.monitor_progress(epoch, train_loss, val_loss)
         
     def forward(self, inputs: np.ndarray) -> np.ndarray:
         """Performs a forward pass through the network by propagating inputs through each layer.
