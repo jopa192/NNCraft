@@ -38,22 +38,14 @@ class NeuralNetwork:
         
         self.loss: Type[Loss] = loss_func
         self.optimizer: Type[Optimizer] = optimizer
-    
-    @staticmethod
-    def monitor_progress(epoch: int, loss: float, val_loss: float):
-        print_str = f"Epoch {epoch} : loss {loss} "
-        
-        if val_loss is not None:
-            print_str += f"val loss {val_loss}"
-            
-        print(print_str)
         
     def train(self, train_data: DataLoader, n_epochs: int, val_data: DataLoader = None, print_every: int=1) -> None:
         """Trains the neural network using the provided dataset for a specified number of epochs with backpropagation.
 
         Args:
-            data (DataLoader): Data loader containig feature data and target values.
+            train_data (DataLoader): Data loader containig training feature data and target values.
             n_epochs (int): Number of epochs to train the network.
+            val_data (DataLoader, optional): Data loader containig validation feature data and target values. Defaults to None.
             print_every (int, optional): How often the training info is printed. Defaults to 1.
         """
         
@@ -71,7 +63,7 @@ class NeuralNetwork:
                 
                 if val_data is not None:
                     for val_sample_batch, val_target in val_data:
-                        val_output = self.forward(val_sample_batch)
+                        val_output = self.forward(val_sample_batch, training=False)
                         
                         self.loss.forward(val_output, val_target, val=True)
                         
@@ -85,7 +77,7 @@ class NeuralNetwork:
             if epoch % print_every == 0:
                 self.monitor_progress(epoch, train_loss, val_loss)
         
-    def forward(self, inputs: np.ndarray) -> np.ndarray:
+    def forward(self, inputs: np.ndarray, training: bool = True) -> np.ndarray:
         """Performs a forward pass through the network by propagating inputs through each layer.
 
         Args:
@@ -97,7 +89,10 @@ class NeuralNetwork:
         
         output = inputs.copy()
         for layer in self.layers:
-            layer.forward(output)
+            if hasattr(layer, "dropout_rate"):
+                layer.forward(output, training=training)
+            else:
+                layer.forward(output)
             output = layer.output
         return output
     
@@ -110,3 +105,15 @@ class NeuralNetwork:
         for layer in reversed(self.layers):
             layer.backward(d_output)
             d_output = layer.d_output
+            
+    def predict(self, inputs: np.ndarray) -> np.ndarray | float:
+        return self.forward(inputs, training=False)        
+    
+    @staticmethod
+    def monitor_progress(epoch: int, loss: float, val_loss: float | None) -> None:
+        print_str = f"Epoch {epoch} : loss {loss} "
+        
+        if val_loss is not None:
+            print_str += f"val loss {val_loss}"
+            
+        print(print_str)

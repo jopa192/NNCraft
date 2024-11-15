@@ -115,4 +115,31 @@ class ReLU(Layer):
     def __repr__(self) -> str:
         return "[ReLU Activation]"
     
+
+class Dropout(Layer):
     
+    def __init__(self, dropout_rate: float) -> None:
+        """A regularization technique used in neural networks to prevent overfitting. During training, it randomly "drops out" (sets to zero) a fraction of the neurons.
+
+        Args:
+            dropout_rate (float): The fraction of neurons to drop
+        """
+        self.dropout_rate = dropout_rate
+        self.mask = None
+    
+    def forward(self, inputs: np.ndarray, training: bool = True) -> None:
+        """Droping fraction of neurons.
+
+        Args:
+            inputs (np.ndarray): Input data (shape: N x input_size)
+            training (bool, optional): Only drops neurons while training process, no dropout during inference. Defaults to True.
+        """
+        if not training:
+            self.output = inputs
+            return
+        
+        self.mask = np.random.binomial(1, 1 - self.dropout_rate, size=inputs.shape)
+        self.output = inputs * self.mask / (1 - self.dropout_rate)        
+    
+    def backward(self, d_inputs: np.ndarray) -> None:
+        self.d_output = d_inputs * self.mask  
