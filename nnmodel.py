@@ -39,7 +39,7 @@ class NeuralNetwork:
         self.loss: Type[Loss] = loss_func
         self.optimizer: Type[Optimizer] = optimizer
         
-    def train(self, train_data: DataLoader, n_epochs: int, val_data: DataLoader = None, print_every: int=1) -> None:
+    def train(self, train_data: DataLoader, n_epochs: int, val_data: DataLoader | None = None, print_every: int=1) -> None:
         """Trains the neural network using the provided dataset for a specified number of epochs with backpropagation.
 
         Args:
