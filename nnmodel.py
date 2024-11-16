@@ -4,6 +4,7 @@ from layers import Layer
 from losses import Loss
 from optimizers import Optimizer
 from data_utils import DataLoader
+from lr_schedulers import LRScheduler
 
 
 class NeuralNetwork:
@@ -39,7 +40,8 @@ class NeuralNetwork:
         self.loss: Type[Loss] = loss_func
         self.optimizer: Type[Optimizer] = optimizer
         
-    def train(self, train_data: DataLoader, n_epochs: int, val_data: DataLoader | None = None, print_every: int=1) -> None:
+    def train(self, train_data: DataLoader, n_epochs: int, val_data: DataLoader | None = None, 
+              lr_scheduler: Type[LRScheduler] | None = None, print_every: int=1) -> None:
         """Trains the neural network using the provided dataset for a specified number of epochs with backpropagation.
 
         Args:
@@ -70,6 +72,9 @@ class NeuralNetwork:
                         running_val_loss += self.loss.output
                         
                 running_loss += self.loss.output
+                
+                if lr_scheduler is not None:
+                    lr_scheduler.schedule(epoch)
                 
             train_loss = running_loss / len(train_data)
             val_loss = running_val_loss / len(val_data) if val_data is not None else None
