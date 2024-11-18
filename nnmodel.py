@@ -48,6 +48,7 @@ class NeuralNetwork:
             train_data (DataLoader): Data loader containig training feature data and target values.
             n_epochs (int): Number of epochs to train the network.
             val_data (DataLoader, optional): Data loader containig validation feature data and target values. Defaults to None.
+            lr_scheduler (Type[LRScheduler] | None, optional): Determines the learning rate based on the current epoch . Defaults to None.
             print_every (int, optional): How often the training info is printed. Defaults to 1.
         """
         
@@ -55,9 +56,9 @@ class NeuralNetwork:
             running_loss = 0.
             running_val_loss = 0.
             for sample_batch, target in train_data:
-                output = self.forward(sample_batch)
+                output = self.forward(sample_batch, training=True)
                 
-                self.loss.forward(output, target)
+                running_loss += self.loss.calculate_loss(output, target)
                 
                 self.backward()
                 
@@ -67,11 +68,7 @@ class NeuralNetwork:
                     for val_sample_batch, val_target in val_data:
                         val_output = self.forward(val_sample_batch, training=False)
                         
-                        self.loss.forward(val_output, val_target, val=True)
-                        
-                        running_val_loss += self.loss.output
-                        
-                running_loss += self.loss.output
+                        running_val_loss += self.loss.calculate_loss(val_output, val_target, training=False)
                 
                 if lr_scheduler is not None:
                     lr_scheduler.schedule(epoch)

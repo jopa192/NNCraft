@@ -4,15 +4,15 @@ import numpy as np
 class Loss:
     """Base class for all loss functions."""
     
-    def forward(self, y_pred: np.ndarray, y_true: np.ndarray, val: bool) -> None:
+    def calculate_loss(self, y_pred: np.ndarray, y_true: np.ndarray, training: bool = True) -> np.float64:
         """
-        Forward pass for loss calculation. Needs to be implemented by subclasses.
+        Calculating loss based on predictions and targets. Needs to be implemented by subclasses.
         
         Args:
         - y_pred: Predicted values (e.g., probabilities, outputs from the network).
         - y_true: True values.
         """
-        raise NotImplementedError("The forward method must be implemented by the subclass.")
+        raise NotImplementedError("The calculate loss method must be implemented by the subclass.")
     
     def backward(self) -> np.ndarray:
         """
@@ -33,17 +33,17 @@ class BinaryCrossEntropyLoss(Loss):
     """Used for binary classification tasks, where each prediction is either 0 or 1.
     """
     
-    def forward(self, y_pred: np.ndarray, y_true: np.ndarray, val: bool = False) -> None:
+    def calculate_loss(self, y_pred: np.ndarray, y_true: np.ndarray, training: bool = True) -> np.float64:
         y_pred = np.clip(y_pred, 1e-9, 1 - 1e-9)
         
         losses = -(y_true * np.log(y_pred) + (1.-y_true) * np.log(1.-y_pred))
-        loss = np.mean(losses, axis=0)
+        loss = np.mean(losses, axis=0).item()
         
-        self.output = loss.item()
-        
-        if not val:
+        if training:
             self.y_pred = y_pred
             self.y_true = y_true      
+            
+        return loss
     
     def backward(self) -> np.ndarray:        
         n_outputs = self.y_pred.shape[0]
@@ -56,7 +56,7 @@ class CategoricalCrossEntropyLoss(Loss):
     """Used for multi-class classification tasks, where each prediction corresponds to one class out of multiple classes.
     """
     
-    def forward(self, y_pred: np.ndarray, y_true: np.ndarray) -> None:
+    def calculate_loss(self, y_pred: np.ndarray, y_true: np.ndarray, training: bool = True) -> np.float64:
         
         def softmax(x: np.ndarray) -> np.ndarray:
             exp_e = np.exp(x - np.max(x, axis=1, keepdims=True))  # Stability trick
@@ -74,10 +74,11 @@ class CategoricalCrossEntropyLoss(Loss):
         loss = np.sum(log_likelihood) / N
         
         # Store for backward pass
-        self.y_pred = y_pred
-        self.y_true = y_true
+        if training:
+            self.y_pred = y_pred
+            self.y_true = y_true
 
-        self.output = loss
+        return loss
     
     def backward(self) -> np.ndarray:
         # Number of samples
@@ -98,11 +99,14 @@ class MeanSquaredError(Loss):
     """Used for regression tasks, measuring the average squared difference between predicted and true values.
     """
     
-    def forward(self, y_pred: np.ndarray, y_true: np.ndarray) -> None:
-        self.output = np.mean((y_pred - y_true) ** 2)
+    def calculate_loss(self, y_pred: np.ndarray, y_true: np.ndarray, training: bool = True) -> np.float64:
+        loss = np.mean((y_pred - y_true) ** 2)
         
-        self.y_pred = y_pred
-        self.y_true = y_true
+        if training:
+            self.y_pred = y_pred
+            self.y_true = y_true
+        
+        return loss
     
     def backward(self) -> None:
         N = self.y_pred.shape[0]
@@ -114,11 +118,14 @@ class MeanAbsoluteError(Loss):
     """Used for regression tasks, it calculates the average of the absolute differences between predicted and true values.
     """
     
-    def forward(self, y_pred: np.ndarray, y_true: np.ndarray) -> None:
-        self.output = np.mean(np.abs(y_true - y_pred))
+    def calculate_loss(self, y_pred: np.ndarray, y_true: np.ndarray, training: bool = True) -> None:
+        loss = np.mean(np.abs(y_true - y_pred))
         
-        self.y_pred = y_pred
-        self.y_true = y_true
+        if training:
+            self.y_pred = y_pred
+            self.y_true = y_true
+            
+        return loss
     
     def backward(self) -> None:
         N = self.y_true.shape[0]
@@ -137,7 +144,7 @@ class HuberLoss(Loss):
         
         self.delta = delta
         
-    def forward(self, y_pred: np.ndarray, y_true: np.ndarray) -> None:
+    def calculate_loss(self, y_pred: np.ndarray, y_true: np.ndarray, training: bool = True) -> None:
         error = y_pred - y_true
         abs_error = np.abs(error)
         
@@ -145,10 +152,13 @@ class HuberLoss(Loss):
         loss = np.where(abs_error <= self.delta,
                         0.5 * error**2,  
                         self.delta * (abs_error - 0.5 * self.delta))  
-        self.output = np.mean(loss)  
+        loss = np.mean(loss)  
         
-        self.y_pred = y_pred
-        self.y_true = y_true
+        if training:
+            self.y_pred = y_pred
+            self.y_true = y_true
+            
+        return loss
     
     def backward(self) -> None:
         error = self.y_pred - self.y_true
