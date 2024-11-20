@@ -16,10 +16,10 @@ class Layer:
         raise NotImplementedError
 
 
-class Linear(Layer):
+class Dense(Layer):
     
     def __init__(self, input_size: int, output_size: int) -> None:
-        """Initialize the Linear Layer with weights and biases
+        """Initialize the Dense Layer with weights and biases
 
         Args:
             input_size (int): Number of inputs to the layer
@@ -33,7 +33,7 @@ class Linear(Layer):
         self.biases = np.zeros((1, output_size)) 
         
     def forward(self, inputs: np.ndarray) -> None:
-        """Forward pass for the linear layer
+        """Forward pass for the Dense layer (dot product of inputs  weights plus biases)
 
         Args:
             inputs (np.ndarray): Input data (shape: N x input_size)
@@ -43,7 +43,7 @@ class Linear(Layer):
         self.output = inputs @ self.weights + self.biases
     
     def backward(self, d_inputs: np.ndarray) -> None:
-        """Backward pass for the linear layer to compute gradients
+        """Calculating gradients of loss with respect to weights, biases and inputs separately
 
         Args:
             d_inputs (np.ndarray): Gradient of the loss with respect to the layer's output (shape: N x output_size)

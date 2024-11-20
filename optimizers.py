@@ -1,10 +1,10 @@
 import numpy as np
 from typing import Type, List, Tuple
-from layers import Layer, Linear
+from layers import Dense
 
 class Optimizer:
     
-    def __init__(self, learning_rate: float, layers: List[Type[Layer]]) -> None:
+    def __init__(self, learning_rate: float, trainable: List[Type[Dense]]) -> None:
         """algorithm used to change the attributes of neural network (like weights and learning rate) to reduce the losses.
 
         Args:
@@ -12,7 +12,7 @@ class Optimizer:
             layers (List[Type[Layer]]): Layers of the model.
         """
         self.learning_rate: float = learning_rate
-        self.trainable: List[Linear] = [layer for layer in layers if hasattr(layer, "weights")]
+        self.trainable: List[Dense] = trainable
         
     def gradient_step(self) -> None:
         """Gradient step, should be implemented by subclasses."""
@@ -21,7 +21,7 @@ class Optimizer:
 
 class SGD(Optimizer):
     
-    def __init__(self, learning_rate: float, layers: List[Type[Layer]], momentum: float = 0) -> None:
+    def __init__(self, learning_rate: float, trainable: List[Type[Dense]], momentum: float = 0) -> None:
         """Stochastic Gradient Descent updates the model's weights by taking small steps proportional to the negative gradient of the loss function
 
         Args:
@@ -29,7 +29,7 @@ class SGD(Optimizer):
             layers (List[Type[Layer]]): Layers of the model.
             momentum (float, optional): Momentum helps SGD accelerate by using past gradients to smooth out the steps taken. Defaults to 0.
         """
-        super().__init__(learning_rate, layers)
+        super().__init__(learning_rate, trainable)
         self.momentum: float = momentum        
         
         self.momentum_parameters: List[Tuple[np.ndarray, np.ndarray]] = [
@@ -54,7 +54,7 @@ class SGD(Optimizer):
     
 class AdaGrad(Optimizer):
     
-    def __init__(self, learning_rate: float, layers: List[Type[Layer]], epsilon: float = 1e-9) -> None:
+    def __init__(self, learning_rate: float, layers: List[Type[Dense]], epsilon: float = 1e-9) -> None:
         """Optimizer that adapts the learning rate for each parameter by accumulating the square of gradients over time
 
         Args:
@@ -86,7 +86,7 @@ class AdaGrad(Optimizer):
 
 class AdaDelta(Optimizer):
     
-    def __init__(self, learning_rate: float, layers: List[Type[Layer]], rho: float = 0.95, epsilon: float = 1e-9) -> None:
+    def __init__(self, learning_rate: float, layers: List[Type[Dense]], rho: float = 0.95, epsilon: float = 1e-9) -> None:
         """AdaDelta is an adaptive learning rate optimization algorithm that extends AdaGrad to overcome one of its key limitations: the rapid decrease in effective learning rate as gradients accumulate.
 
         Args:
@@ -137,7 +137,7 @@ class AdaDelta(Optimizer):
             
             
 class RMSprop(Optimizer):
-    def __init__(self, learning_rate: float, layers: List[Type[Layer]], rho: float = 0.9, epsilon: float = 1e-9) -> None:
+    def __init__(self, learning_rate: float, layers: List[Type[Dense]], rho: float = 0.9, epsilon: float = 1e-9) -> None:
         """Adaptive learning rate optimization algorithm, similar to AdaGrad and AdaDelta, but designed specifically to address AdaGrad's rapid decay in learning rate.
 
         Args:
@@ -171,7 +171,7 @@ class RMSprop(Optimizer):
             
 
 class Adam(Optimizer):
-    def __init__(self, learning_rate: float, layers: List[Type[Layer]], beta1: float = 0.9, beta2: float = 0.999, epsilon: float = 1e-9) -> None:
+    def __init__(self, learning_rate: float, layers: List[Type[Dense]], beta1: float = 0.9, beta2: float = 0.999, epsilon: float = 1e-9) -> None:
         """Adam (Adaptive Moment Estimation) is an optimization algorithm that combines the advantages of two other popular optimization algorithms: Momentum and RMSprop.
 
         Args:
