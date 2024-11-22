@@ -21,7 +21,7 @@ class StepDecay(LRScheduler):
         self.step_size = step_size
         
     def schedule(self, current_epoch: int):
-        return self.initial_lr * (self.gamma ** (current_epoch // self.step_size))
+        self.optimizer.learning_rate = self.initial_lr * (self.gamma ** (current_epoch // self.step_size))
     
 
 class ExponentialDecay(LRScheduler):
@@ -31,7 +31,7 @@ class ExponentialDecay(LRScheduler):
         self.lambda_ = lambda_
         
     def schedule(self, current_epoch: int):
-        return self.initial_lr * np.exp(-self.lambda_ * current_epoch)
+        self.optimizer.learning_rate = self.initial_lr * np.exp(-self.lambda_ * current_epoch)
     
     
 class CosineLR(LRScheduler):
@@ -42,6 +42,6 @@ class CosineLR(LRScheduler):
         self.eta_min = min_lr
         
     def schedule(self, current_epoch: int):
-        return self.eta_min + ((self.initial_lr - self.eta_min) / 2) * (1 + np.cos((current_epoch * np.pi) / self.T))
+        self.optimizer.learning_rate = self.eta_min + ((self.initial_lr - self.eta_min) / 2) * (1 + np.cos((current_epoch * np.pi) / self.T))
         
     
