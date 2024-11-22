@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Type, List, Tuple
+from typing import Type, List, Tuple, Dict
 from layers import Layer, Dense
 from losses import Loss
 from optimizers import Optimizer
@@ -44,16 +44,6 @@ class NeuralNetwork:
         
         self.loss: Type[Loss] = loss_func
         self.optimizer: Type[Optimizer] = optimizer
-    """
-
-    Args:
-        train_data (DataLoader): 
-        n_epochs (int): 
-        val_data (DataLoader, optional): 
-        lr_scheduler (Type[LRScheduler] | None, optional):  . Defaults to None.
-        print_every (int, optional): . Defaults to 1.
-        early_stop (int | None, optional): Stops . Defaults to None.
-    """
         
     def train(self, train_data: DataLoader, n_epochs: int, val_data: DataLoader | None = None, 
               lr_scheduler: Type[LRScheduler] | None = None, print_every: int=1, return_best: bool = False) -> None:
@@ -68,7 +58,7 @@ class NeuralNetwork:
             return_best (bool, optional): If True, the model applies the parameters recorded at the epoch with the smallest loss (val loss if val data is provided, otherwise train loss). Defaults to False.
         """
         
-        best_params = None
+        best_params: List[Dict[str, np.ndarray]] | None = None
         for epoch in range(1, n_epochs+1):
             # Training and validation loss
             running_loss: np.float64 = 0.
@@ -76,9 +66,9 @@ class NeuralNetwork:
             
             # Iterating through batches
             for sample_batch, target in train_data:
-                output, params = self.forward(sample_batch, training=True)
+                output, params, l1_penalty = self.forward(sample_batch, training=True)
                 
-                running_loss += self.loss.calculate_loss(output, target)
+                running_loss += self.loss.calculate_loss(output, target) + l1_penalty
                 
                 self.backward()
                 
@@ -87,7 +77,7 @@ class NeuralNetwork:
                 # Training validation
                 if val_data is not None:
                     for val_sample_batch, val_target in val_data:
-                        val_output = self.forward(val_sample_batch, training=False)
+                        val_output = self.predict(val_sample_batch)
                         
                         running_val_loss += self.loss.calculate_loss(val_output, val_target, training=False)
                 
@@ -117,11 +107,11 @@ class NeuralNetwork:
             if epoch % print_every == 0:
                 self.monitor_progress(epoch, train_loss, val_loss)
                 
-        if best_params:
+        if best_params is not None:
             self.apply_best_params(best_params)
-            print(f"Best loss: {best_params["loss"]}")
+            print(f"Best {"val" if val_loss is not None else "train"} loss: {best_params["loss"]}")
         
-    def forward(self, inputs: np.ndarray, training: bool = True) -> Tuple[np.ndarray, List[Tuple[np.ndarray, np.ndarray]]] | np.ndarray:
+    def forward(self, inputs: np.ndarray, training: bool = True) -> Tuple[np.ndarray, List[Dict[str, np.ndarray]]]:
         """Performs a forward pass through the neural network.
 
         Args:
@@ -129,31 +119,24 @@ class NeuralNetwork:
             training (bool, optional): Indicates whether the network is in training mode. Defaults to True.
             
         Returns: 
-            Tuple[np.ndarray, List[Dict[str, np.ndarray]]] | np.ndarray: 
-            - During training (training=True):
-                A tuple containing:
-                  - Final output of the forward pass (np.ndarray).
-                  - List of dictionaries with trainable parameters (weights, biases).
-            - During inference (training=False):
-                Final output of the forward pass (np.ndarray).
+            Tuple[np.ndarray, List[Dict[str, np.ndarray]]]: Final output of the forward pass (np.ndarray) and list of dictionaries with trainable parameters (weights, biases)
         """
         
         output = inputs.copy()
         params = []
+        l1_penalty = 0.
         
         for layer in self.layers:
             if hasattr(layer, "dropout_rate"):
                 layer.forward(output, training=training)
             else:
                 layer.forward(output)
-                if training and hasattr(layer, "weights"):
+                if hasattr(layer, "weights"):
                     params.append({"weights": layer.weights, "biases": layer.biases})
+                    if layer.l1_lambda > 0: l1_penalty += layer.l1_regularize()
             output = layer.output
         
-        if training:
-            return output, params
-        
-        return output
+        return output, params, l1_penalty
     
     def backward(self) -> None:
         """Performs backpropagation through the network, starting with the loss function and propagating the gradients backward through each layer.
@@ -171,7 +154,8 @@ class NeuralNetwork:
             dense.biases = params["biases"]            
             
     def predict(self, inputs: np.ndarray) -> np.ndarray | float:
-        return self.forward(inputs, training=False) 
+        predictions, _, _ = self.forward(inputs, training=False) 
+        return predictions
     
     @staticmethod
     def monitor_progress(epoch: int, loss: float, val_loss: float | None) -> None:

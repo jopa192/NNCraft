@@ -9,7 +9,7 @@ class Optimizer:
 
         Args:
             learning_rate (float): Tuning parameter determines the step size at each iteration while moving toward a minimum of a loss.
-            layers (List[Type[Layer]]): Layers of the model.
+            trainable (List[Type[Layer]]): Dense layers of the model.
         """
         self.learning_rate: float = learning_rate
         self.trainable: List[Dense] = trainable
@@ -54,15 +54,15 @@ class SGD(Optimizer):
     
 class AdaGrad(Optimizer):
     
-    def __init__(self, learning_rate: float, layers: List[Type[Dense]], epsilon: float = 1e-9) -> None:
+    def __init__(self, learning_rate: float, trainable: List[Type[Dense]], epsilon: float = 1e-9) -> None:
         """Optimizer that adapts the learning rate for each parameter by accumulating the square of gradients over time
 
         Args:
             learning_rate (float): Tuning parameter determines the step size at each iteration while moving toward a minimum of a loss.
-            layers (List[Type[Layer]]): Layers of the model.
+            trainable (List[Type[Layer]]): Dense layers of the model.
             epsilon (float, optional): A small constant to prevent division by zero when adjusting gradients. Defaults to 1e-9.
         """
-        super().__init__(learning_rate, layers)
+        super().__init__(learning_rate, trainable)
     
         self.epsilon: float = epsilon
         self.squared_gradients: List[Tuple[np.ndarray, np.ndarray]] = [
@@ -86,16 +86,16 @@ class AdaGrad(Optimizer):
 
 class AdaDelta(Optimizer):
     
-    def __init__(self, learning_rate: float, layers: List[Type[Dense]], rho: float = 0.95, epsilon: float = 1e-9) -> None:
+    def __init__(self, learning_rate: float, trainable: List[Type[Dense]], rho: float = 0.95, epsilon: float = 1e-9) -> None:
         """AdaDelta is an adaptive learning rate optimization algorithm that extends AdaGrad to overcome one of its key limitations: the rapid decrease in effective learning rate as gradients accumulate.
 
         Args:
             learning_rate (float): Tuning parameter determines the step size at each iteration while moving toward a minimum of a loss.
-            layers (List[Type[Layer]]): Layers of the model.
+            trainable (List[Type[Layer]]): Dense layers of the model.
             rho (float, optional): Decay rate. Defaults to 0.95.
             epsilon (float, optional): A small constant to prevent division by zero when adjusting gradients. Defaults to 1e-9.
         """
-        super().__init__(learning_rate, layers)
+        super().__init__(learning_rate, trainable)
         self.rho = rho
         self.epsilon = epsilon
         
@@ -137,16 +137,16 @@ class AdaDelta(Optimizer):
             
             
 class RMSprop(Optimizer):
-    def __init__(self, learning_rate: float, layers: List[Type[Dense]], rho: float = 0.9, epsilon: float = 1e-9) -> None:
+    def __init__(self, learning_rate: float, trainable: List[Type[Dense]], rho: float = 0.9, epsilon: float = 1e-9) -> None:
         """Adaptive learning rate optimization algorithm, similar to AdaGrad and AdaDelta, but designed specifically to address AdaGrad's rapid decay in learning rate.
 
         Args:
             learning_rate (float): Tuning parameter determines the step size at each iteration while moving toward a minimum of a loss.
-            layers (List[Type[Layer]]): Layers of the model.
+            trainable (List[Type[Layer]]): Dense layers of the model.
             rho (float, optional): Decay rate. Defaults to 0.9.
             epsilon (float, optional): A small constant to prevent division by zero when adjusting gradients. Defaults to 1e-9.
         """
-        super().__init__(learning_rate, layers)
+        super().__init__(learning_rate, trainable)
         self.rho = rho
         self.epsilon = epsilon
         
@@ -171,17 +171,17 @@ class RMSprop(Optimizer):
             
 
 class Adam(Optimizer):
-    def __init__(self, learning_rate: float, layers: List[Type[Dense]], beta1: float = 0.9, beta2: float = 0.999, epsilon: float = 1e-9) -> None:
+    def __init__(self, learning_rate: float, trainable: List[Type[Dense]], beta1: float = 0.9, beta2: float = 0.999, epsilon: float = 1e-9) -> None:
         """Adam (Adaptive Moment Estimation) is an optimization algorithm that combines the advantages of two other popular optimization algorithms: Momentum and RMSprop.
 
         Args:
             learning_rate (float): Tuning parameter determines the step size at each iteration while moving toward a minimum of a loss.
-            layers (List[Type[Layer]]): Layers of the model.
+            trainable (List[Type[Layer]]): Dense layers of the model.
             beta1 (float, optional): Decay rate for the moving averages of the first moment . Defaults to 0.9.
             beta2 (float, optional): Decay rate for the moving averages of the second moment. Defaults to 0.999.
             epsilon (float, optional): A small constant to prevent division by zero when adjusting gradients. Defaults to 1e-9.
         """
-        super().__init__(learning_rate, layers)
+        super().__init__(learning_rate, trainable)
         
         self.beta1 = beta1
         self.beta2 = beta2

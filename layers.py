@@ -18,19 +18,18 @@ class Layer:
 
 class Dense(Layer):
     
-    def __init__(self, input_size: int, output_size: int) -> None:
+    def __init__(self, input_size: int, output_size: int, l1_lambda: float = 0.) -> None:
         """Initialize the Dense Layer with weights and biases
 
         Args:
             input_size (int): Number of inputs to the layer
             output_size (int): Number of outputs from the layer (i.e., number of neurons)
         """
+                
+        self.weights: np.ndarray = np.random.randn(input_size, output_size) * np.sqrt(1. / input_size)
+        self.biases: np.ndarray = np.zeros((1, output_size)) 
         
-        self.input_size = input_size
-        self.output_size = output_size
-        
-        self.weights = np.random.randn(input_size, output_size) * np.sqrt(1. / input_size)
-        self.biases = np.zeros((1, output_size)) 
+        self.l1_lambda: float = l1_lambda
         
     def forward(self, inputs: np.ndarray) -> None:
         """Forward pass for the Dense layer (dot product of inputs  weights plus biases)
@@ -52,7 +51,13 @@ class Dense(Layer):
         self.d_weights = self.inputs.T @ d_inputs
         self.d_biases = np.sum(d_inputs, axis=0, keepdims=True)
         
+        if self.l1_lambda > 0:
+            self.d_weights += self.l1_lambda * np.sign(self.weights)
+        
         self.d_output = d_inputs @ self.weights.T
+        
+    def l1_regularize(self):
+        return self.l1_lambda * np.sum(np.abs(self.weights))
     
     def __repr__(self) -> str:
         return f"[Dense Layer, input_size: {self.input_size}, n_neurons: {self.output_size}]"
