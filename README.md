@@ -75,7 +75,6 @@ If someone else finds value in this project for educational purposes, I’d be p
 
 - Implement additional layers like convolutional and recurrent layers.
 - Implement additional activations and loss functions.
-- Add support for learning rate schedulers.
 - Expand the library with advanced regularization techniques.
 - Include visualization tools for training metrics.
 
