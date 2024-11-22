@@ -8,7 +8,7 @@ from lr_schedulers import LRScheduler
 
 
 class NeuralNetwork:
-    def __init__(self) -> None:        
+    def __init__(self, architecture: list = []) -> None:        
         """Initializes the neural network by setting up an empty list for layers and a placeholder for the loss function.
         """
         
@@ -16,6 +16,9 @@ class NeuralNetwork:
         self.trainable: List[Type[Dense]] = []
         self.loss: Type[Loss] = None
         self.optimizer: Type[Optimizer] = None
+        
+        for layer in architecture:
+            self.add_layer(layer)
         
     def add_layer(self, layer: Type[Layer]) -> None:
         """Adds a layer to the neural network. The first layer must be a linear layer.
