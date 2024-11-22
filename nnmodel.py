@@ -66,9 +66,9 @@ class NeuralNetwork:
             
             # Iterating through batches
             for sample_batch, target in train_data:
-                output, params, l1_penalty = self.forward(sample_batch, training=True)
+                output, params, l1_penalty, l2_penalty = self.forward(sample_batch, training=True)
                 
-                running_loss += self.loss.calculate_loss(output, target) + l1_penalty
+                running_loss += self.loss.calculate_loss(output, target) + l1_penalty + l2_penalty
                 
                 self.backward()
                 
@@ -77,9 +77,9 @@ class NeuralNetwork:
                 # Training validation
                 if val_data is not None:
                     for val_sample_batch, val_target in val_data:
-                        val_output = self.predict(val_sample_batch)
+                        val_output, _, l1_val_penalty, l2_val_penalty = self.forward(val_sample_batch, training=False)
                         
-                        running_val_loss += self.loss.calculate_loss(val_output, val_target, training=False)
+                        running_val_loss += self.loss.calculate_loss(val_output, val_target, training=False) + l1_val_penalty + l2_val_penalty
                 
                 # Adjusting learning rate if learning rate scheduler is provided
                 if lr_scheduler is not None:
@@ -125,6 +125,7 @@ class NeuralNetwork:
         output = inputs.copy()
         params = []
         l1_penalty = 0.
+        l2_penalty = 0.
         
         for layer in self.layers:
             if hasattr(layer, "dropout_rate"):
@@ -134,9 +135,10 @@ class NeuralNetwork:
                 if hasattr(layer, "weights"):
                     params.append({"weights": layer.weights, "biases": layer.biases})
                     if layer.l1_lambda > 0: l1_penalty += layer.l1_regularize()
+                    if layer.l2_lambda > 0: l2_penalty += layer.l2_regularize()
             output = layer.output
         
-        return output, params, l1_penalty
+        return output, params, l1_penalty, l2_penalty
     
     def backward(self) -> None:
         """Performs backpropagation through the network, starting with the loss function and propagating the gradients backward through each layer.
@@ -154,7 +156,7 @@ class NeuralNetwork:
             dense.biases = params["biases"]            
             
     def predict(self, inputs: np.ndarray) -> np.ndarray | float:
-        predictions, _, _ = self.forward(inputs, training=False) 
+        predictions, _, _, _ = self.forward(inputs, training=False) 
         return predictions
     
     @staticmethod

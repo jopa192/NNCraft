@@ -18,7 +18,7 @@ class Layer:
 
 class Dense(Layer):
     
-    def __init__(self, input_size: int, output_size: int, l1_lambda: float = 0.) -> None:
+    def __init__(self, input_size: int, output_size: int, l1_lambda: float = 0., l2_lambda: float = 0.) -> None:
         """Initialize the Dense Layer with weights and biases
 
         Args:
@@ -30,6 +30,7 @@ class Dense(Layer):
         self.biases: np.ndarray = np.zeros((1, output_size)) 
         
         self.l1_lambda: float = l1_lambda
+        self.l2_lambda: float = l2_lambda
         
     def forward(self, inputs: np.ndarray) -> None:
         """Forward pass for the Dense layer (dot product of inputs  weights plus biases)
@@ -53,14 +54,20 @@ class Dense(Layer):
         
         if self.l1_lambda > 0:
             self.d_weights += self.l1_lambda * np.sign(self.weights)
+            
+        if self.l2_lambda > 0:
+            self.d_weights += self.l2_lambda * self.weights
         
         self.d_output = d_inputs @ self.weights.T
         
     def l1_regularize(self):
         return self.l1_lambda * np.sum(np.abs(self.weights))
     
+    def l2_regularize(self):
+        return self.l2_lambda * 0.5 * np.sum(self.weights**2)
+    
     def __repr__(self) -> str:
-        return f"[Dense Layer, input_size: {self.input_size}, n_neurons: {self.output_size}]"
+        return f"[Dense Layer, input_size: {self.weights.shape[0]}, n_neurons: {self.weights.shape[1]}, L1_λ: {self.l1_lambda}, L2_λ: {self.l2_lambda}]"
     
 
 class Sigmoid(Layer):
@@ -148,3 +155,6 @@ class Dropout(Layer):
     
     def backward(self, d_inputs: np.ndarray) -> None:
         self.d_output = d_inputs * self.mask  
+        
+    def __repr__(self):
+        return f"[Dropout Layer, dropout_rate: {self.dropout_rate}]"
