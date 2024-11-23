@@ -43,13 +43,15 @@ class NeuralNetwork:
 
         Args:
             loss_func (Type[Loss]): The loss function class to be used for training.
+            optimizer (Type[Optimizer]): The optimizer used for updating parameters.
         """
         
         self.loss: Type[Loss] = loss_func
         self.optimizer: Type[Optimizer] = optimizer
         
-    def train(self, train_data: DataLoader, n_epochs: int, val_data: DataLoader | None = None, 
-              lr_scheduler: Type[LRScheduler] | None = None, print_every: int=1, return_best: bool = False) -> None:
+    def train(self, train_data: DataLoader, n_epochs: int, val_data: DataLoader | None = None, *,
+              lr_scheduler: Type[LRScheduler] | None = None, print_every: int=1, return_best: bool = False,
+              patience: int = -1, min_delta: int = 0) -> None:
         """Trains the neural network using the provided dataset for a specified number of epochs with backpropagation.
 
         Args:
@@ -58,12 +60,20 @@ class NeuralNetwork:
             val_data (DataLoader | None, optional): Data loader containig validation feature data and target values. Defaults to None.
             lr_scheduler (Type[LRScheduler] | None, optional): Determines the learning rate based on the current epoch. Defaults to None.
             print_every (int, optional): How often the training info is printed. Defaults to 1.
-            return_best (bool, optional): If True, the model applies the parameters recorded at the epoch with the smallest loss (val loss if val data is provided, otherwise train loss). Defaults to False.
+            return_best (bool, optional): If True, the model applies the parameters recorded at the epoch with the smallest loss (val loss if val data is provided, otherwise train loss). Automatically set to True if patience is provided. Defaults to False.
+            patience (int, optional): Number of epochs with no improvement to wait before stopping. If -1, early stop will not be included in training process. Defaults to -1.
+            min_delta (int, optional): Minimum change in validation loss to qualify as an improvement. Defaults to 0.
         """
         
+        # Returning best parameters is automatically activated if early stop patience is provided
+        if patience >= 0:
+            return_best = True
+        
         best_params: List[Dict[str, np.ndarray]] | None = None
+        es_counter: int = 0
         for epoch in range(1, n_epochs+1):
             # Training and validation loss
+            losses = {"train_loss": 0., "val_loss": 0.}
             running_loss: np.float64 = 0.
             running_val_loss: np.float64 = 0. # Calculated only if validation dataset is provided
             
@@ -90,28 +100,31 @@ class NeuralNetwork:
                 
             train_loss = running_loss / len(train_data)
             val_loss = running_val_loss / len(val_data) if val_data is not None else None
-            
-            # Comparing losses for best model parameters
             # If validation loss does not exist (validation data is not provided),
-            # training loss serves as model efficiency metric, otherwise validation loss is efficiency metric
-            if return_best:
-                if best_params is None:
-                    best_params = {"params": params, 
-                                   "loss": val_loss if val_loss is not None else train_loss}
-                else:
-                    if val_loss is not None:
-                        best_params = {"params": params, "loss": val_loss} if val_loss < best_params["loss"] \
-                            else best_params
-                    else:
-                        best_params = {"params": params, "loss": train_loss} if train_loss < best_params["loss"] \
-                            else best_params
+            # training loss serves as criterion for model efficiency, otherwise validation loss is criterion for model efficiency
+            criterion_loss = val_loss if val_loss is not None else train_loss
             
             # Printing efficiency of model for current epoch
             if epoch % print_every == 0:
                 self.monitor_progress(epoch, train_loss, val_loss)
+            
+            # Comparing losses for best model parameters
+            if return_best:
+                if best_params is None: # Best params is None if it is first training iteration
+                    best_params = {"params": params, "loss": criterion_loss}
+                
+                # Early stop
+                if criterion_loss < best_params["loss"] - min_delta:
+                    es_counter = 0
+                    best_params = {"params": params, "loss": criterion_loss}
+                else:
+                    if patience >= 0:
+                        es_counter += 1
+                        if es_counter >= patience:
+                            break
                 
         if best_params is not None:
-            self.apply_best_params(best_params)
+            self.apply_params(best_params)
             print(f"Best {"val" if val_loss is not None else "train"} loss: {best_params["loss"]}")
         
     def forward(self, inputs: np.ndarray, training: bool = True) -> Tuple[np.ndarray, List[Dict[str, np.ndarray]]]:
@@ -153,8 +166,8 @@ class NeuralNetwork:
             layer.backward(d_output)
             d_output = layer.d_output
             
-    def apply_best_params(self, best_params):
-        for dense, params in zip(self.trainable, best_params["params"]):
+    def apply_params(self, params):
+        for dense, params in zip(self.trainable, params["params"]):
             dense.weights = params["weights"]
             dense.biases = params["biases"]            
             
