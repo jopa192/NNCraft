@@ -106,7 +106,7 @@ class NeuralNetwork:
             
             # Printing efficiency of model for current epoch
             if epoch % print_every == 0:
-                self.monitor_progress(epoch, train_loss, val_loss)
+                self.monitor_progress(epoch, train_loss, val_loss, self.optimizer.learning_rate)
             
             # Comparing losses for best model parameters
             if return_best:
@@ -124,7 +124,7 @@ class NeuralNetwork:
                             break
                 
         if best_params is not None:
-            self.apply_params(best_params)
+            self.apply_params(best_params["params"])
             print(f"Best {"val" if val_loss is not None else "train"} loss: {best_params["loss"]}")
         
     def forward(self, inputs: np.ndarray, training: bool = True) -> Tuple[np.ndarray, List[Dict[str, np.ndarray]]]:
@@ -166,8 +166,8 @@ class NeuralNetwork:
             layer.backward(d_output)
             d_output = layer.d_output
             
-    def apply_params(self, params):
-        for dense, params in zip(self.trainable, params["params"]):
+    def apply_params(self, params: List[Dict["str", np.ndarray]]) -> None:
+        for dense, params in zip(self.trainable, params):
             dense.weights = params["weights"]
             dense.biases = params["biases"]            
             
@@ -176,10 +176,12 @@ class NeuralNetwork:
         return predictions
     
     @staticmethod
-    def monitor_progress(epoch: int, loss: float, val_loss: float | None) -> None:
+    def monitor_progress(epoch: int, loss: float, val_loss: float | None, lr: float) -> None:
         print_str = f"Epoch {epoch} : loss {loss} "
         
         if val_loss is not None:
-            print_str += f"val loss {val_loss}"
+            print_str += f"val loss {val_loss} "
+            
+        print_str += f"lr {lr:.7f}"
             
         print(print_str)
