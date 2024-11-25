@@ -3,6 +3,9 @@ import numpy as np
 class Layer:
     """Base class for all layers in the neural network."""
     
+    def __init__(self, **params):
+        self.params = params
+    
     def forward(self, inputs: np.ndarray) -> None:
         """Forward pass, should be implemented by subclasses."""
         raise NotImplementedError("Forward pass should be implemented by subclasses.")
@@ -18,16 +21,18 @@ class Layer:
 
 class Dense(Layer):
     
-    def __init__(self, input_size: int, output_size: int, l1_lambda: float = 0., l2_lambda: float = 0.) -> None:
+    def __init__(self, input_size: int, output_size: int, l1_lambda: float = 0., l2_lambda: float = 0., weights: np.ndarray = None, biases: np.ndarray = None) -> None:
         """Initialize the Dense Layer with weights and biases
 
         Args:
             input_size (int): Number of inputs to the layer
             output_size (int): Number of outputs from the layer (i.e., number of neurons)
         """
+        
+        super().__init__(input_size=input_size, output_size=output_size, l1_lambda=l1_lambda, l2_lambda=l2_lambda)
                 
-        self.weights: np.ndarray = np.random.randn(input_size, output_size) * np.sqrt(1. / input_size)
-        self.biases: np.ndarray = np.zeros((1, output_size)) 
+        self.weights: np.ndarray = np.random.randn(input_size, output_size) * np.sqrt(1. / input_size) if weights is None else weights
+        self.biases: np.ndarray = np.zeros((1, output_size)) if biases is None else biases
         
         self.l1_lambda: float = l1_lambda
         self.l2_lambda: float = l2_lambda
@@ -74,6 +79,9 @@ class Sigmoid(Layer):
     
     """Used for binary classification or output between 0 and 1.
     """
+    
+    def __init__(self):
+        super().__init__()
         
     def forward(self, inputs: np.ndarray) -> None:
         """f(x) = 1 / (1 + exp(-x))
@@ -103,6 +111,9 @@ class ReLU(Layer):
     
     """Sets negative values to zero and keeps positive values unchanged.
     """
+    
+    def __init__(self):
+        super().__init__()
             
     def forward(self, inputs: np.ndarray) -> None:
         """f(x) = max(0, x)
@@ -136,6 +147,9 @@ class Dropout(Layer):
         Args:
             dropout_rate (float): The fraction of neurons to drop
         """
+        
+        super().__init__(dropout_rate=dropout_rate)
+        
         self.dropout_rate = dropout_rate
         self.mask = None
     

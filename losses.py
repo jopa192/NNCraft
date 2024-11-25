@@ -4,6 +4,9 @@ import numpy as np
 class Loss:
     """Base class for all loss functions."""
     
+    def __init__(self, **params):
+        self.params = params
+    
     def calculate_loss(self, y_pred: np.ndarray, y_true: np.ndarray, training: bool = True) -> np.float64:
         """
         Calculating loss based on predictions and targets. Needs to be implemented by subclasses.
@@ -33,6 +36,9 @@ class BinaryCrossEntropyLoss(Loss):
     """Used for binary classification tasks, where each prediction is either 0 or 1.
     """
     
+    def __init__(self):
+        super().__init__()
+    
     def calculate_loss(self, y_pred: np.ndarray, y_true: np.ndarray, training: bool = True) -> np.float64:
         y_pred = np.clip(y_pred, 1e-9, 1 - 1e-9)
         
@@ -55,6 +61,9 @@ class CategoricalCrossEntropyLoss(Loss):
     
     """Used for multi-class classification tasks, where each prediction corresponds to one class out of multiple classes.
     """
+    
+    def __init__(self):
+        super().__init__()
     
     def calculate_loss(self, y_pred: np.ndarray, y_true: np.ndarray, training: bool = True) -> np.float64:
         
@@ -99,6 +108,9 @@ class MeanSquaredError(Loss):
     """Used for regression tasks, measuring the average squared difference between predicted and true values.
     """
     
+    def __init__(self):
+        super().__init__()
+    
     def calculate_loss(self, y_pred: np.ndarray, y_true: np.ndarray, training: bool = True) -> np.float64:
         loss = np.mean((y_pred - y_true) ** 2)
         
@@ -118,6 +130,9 @@ class MeanAbsoluteError(Loss):
     """Used for regression tasks, it calculates the average of the absolute differences between predicted and true values.
     """
     
+    def __init__(self):
+        super().__init__()
+    
     def calculate_loss(self, y_pred: np.ndarray, y_true: np.ndarray, training: bool = True) -> None:
         loss = np.mean(np.abs(y_true - y_pred))
         
@@ -135,12 +150,13 @@ class MeanAbsoluteError(Loss):
 
 class HuberLoss(Loss):
     
-    def __init__(self, delta: float = 1.0):
+    def __init__(self, delta):
         """A hybrid loss function that combines the best features of MSE and MAE, providing robustness to outliers while remaining differentiable at all points.
 
         Args:
             delta (float, optional): Transition point between MSE and MAE behavior. Defaults to 1.0.
         """
+        super().__init__(delta=delta)
         
         self.delta = delta
         

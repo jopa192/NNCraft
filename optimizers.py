@@ -4,15 +4,17 @@ from layers import Dense
 
 class Optimizer:
     
-    def __init__(self, learning_rate: float, trainable: List[Type[Dense]]) -> None:
+    def __init__(self, **params) -> None:
         """algorithm used to change the attributes of neural network (like weights and learning rate) to reduce the losses.
 
         Args:
             learning_rate (float): Tuning parameter determines the step size at each iteration while moving toward a minimum of a loss.
             trainable (List[Type[Layer]]): Dense layers of the model.
         """
-        self.learning_rate: float = learning_rate
-        self.trainable: List[Dense] = trainable
+        self.learning_rate: float = params["learning_rate"]
+        self.trainable: List[Dense] = params["trainable"]
+        params.pop("trainable")
+        self.params = params
         
     def gradient_step(self) -> None:
         """Gradient step, should be implemented by subclasses."""
@@ -29,7 +31,7 @@ class SGD(Optimizer):
             layers (List[Type[Layer]]): Layers of the model.
             momentum (float, optional): Momentum helps SGD accelerate by using past gradients to smooth out the steps taken. Defaults to 0.
         """
-        super().__init__(learning_rate, trainable)
+        super().__init__(learning_rate=learning_rate, trainable=trainable, momentum=momentum)
         self.momentum: float = momentum        
         
         self.momentum_parameters: List[Tuple[np.ndarray, np.ndarray]] = [
@@ -62,7 +64,7 @@ class AdaGrad(Optimizer):
             trainable (List[Type[Layer]]): Dense layers of the model.
             epsilon (float, optional): A small constant to prevent division by zero when adjusting gradients. Defaults to 1e-9.
         """
-        super().__init__(learning_rate, trainable)
+        super().__init__(learning_rate=learning_rate, trainable=trainable, epsilon=epsilon)
     
         self.epsilon: float = epsilon
         self.squared_gradients: List[Tuple[np.ndarray, np.ndarray]] = [
@@ -95,7 +97,7 @@ class AdaDelta(Optimizer):
             rho (float, optional): Decay rate. Defaults to 0.95.
             epsilon (float, optional): A small constant to prevent division by zero when adjusting gradients. Defaults to 1e-9.
         """
-        super().__init__(learning_rate, trainable)
+        super().__init__(learning_rate=learning_rate, trainable=trainable, rho=rho, epsilon=epsilon)
         self.rho = rho
         self.epsilon = epsilon
         
@@ -146,7 +148,7 @@ class RMSprop(Optimizer):
             rho (float, optional): Decay rate. Defaults to 0.9.
             epsilon (float, optional): A small constant to prevent division by zero when adjusting gradients. Defaults to 1e-9.
         """
-        super().__init__(learning_rate, trainable)
+        super().__init__(learning_rate=learning_rate, trainable=trainable, rho=rho, epsilon=epsilon)
         self.rho = rho
         self.epsilon = epsilon
         
@@ -181,7 +183,7 @@ class Adam(Optimizer):
             beta2 (float, optional): Decay rate for the moving averages of the second moment. Defaults to 0.999.
             epsilon (float, optional): A small constant to prevent division by zero when adjusting gradients. Defaults to 1e-9.
         """
-        super().__init__(learning_rate, trainable)
+        super().__init__(learning_rate=learning_rate, trainable=trainable, beta1=beta1, beta2=beta2, epsilon=epsilon)
         
         self.beta1 = beta1
         self.beta2 = beta2
