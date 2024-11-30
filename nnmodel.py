@@ -68,12 +68,13 @@ class NeuralNetwork:
         # Returning best parameters is automatically activated if early stop patience is provided
         if patience >= 0:
             return_best = True
+            
+        self.losses_log = []
         
         best_params: List[Dict[str, np.ndarray]] | None = None
         es_counter: int = 0
         for epoch in range(1, n_epochs+1):
             # Training and validation loss
-            losses = {"train_loss": 0., "val_loss": 0.}
             running_loss: np.float64 = 0.
             running_val_loss: np.float64 = 0. # Calculated only if validation dataset is provided
             
@@ -103,6 +104,8 @@ class NeuralNetwork:
             # If validation loss does not exist (validation data is not provided),
             # training loss serves as criterion for model efficiency, otherwise validation loss is criterion for model efficiency
             criterion_loss = val_loss if val_loss is not None else train_loss
+            
+            self.losses_log.append((train_loss, val_loss) if val_loss is not None else (train_loss,))
             
             # Printing efficiency of model for current epoch
             if epoch % print_every == 0:
@@ -174,6 +177,23 @@ class NeuralNetwork:
     def predict(self, inputs: np.ndarray) -> np.ndarray | float:
         predictions, _, _, _ = self.forward(inputs, training=False) 
         return predictions
+    
+    def plot_loss_history(self):
+        import matplotlib.pyplot as plt
+        
+        losses_log = np.array(self.losses_log)
+        epochs = np.arange(losses_log.shape[0]) + 1
+        
+        plt.figure(figsize=(8, 6))
+        plt.plot(epochs, losses_log[:, 0], label='Training Loss', color='b')
+        if losses_log.shape[1] == 2:
+            plt.plot(epochs, losses_log[:, 1], label='Validation Loss', color='r')
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss')
+        plt.title('Loss vs Epochs')
+        plt.legend()
+        plt.grid()
+        plt.show()
     
     @staticmethod
     def monitor_progress(epoch: int, loss: float, val_loss: float | None, lr: float) -> None:
