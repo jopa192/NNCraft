@@ -1,14 +1,14 @@
-# NeuNet: A Neural Network Library Built from Scratch with NumPy
+# NNCraft: A Neural Network Library Built from Scratch with NumPy
 
-**NeuNet** is a neural network library built entirely from scratch using **NumPy**. This project is designed as a learning journey to understand how popular deep learning frameworks like TensorFlow and PyTorch work under the hood.
+**NNCraft** is a neural network library built entirely from scratch using **NumPy**. This project is designed as a learning journey to understand how popular deep learning frameworks like TensorFlow and PyTorch work under the hood.
 
-While primarily for self-education, **NeuNet** can also be a helpful resource for others exploring the foundational concepts of deep learning.
+While primarily for self-education, **NNCraft** can also be a helpful resource for others exploring the foundational concepts of deep learning.
 
 ---
 
 ## 🌟 Purpose
 
-The primary purpose of **NeuNet** is to:
+The primary purpose of **NNCraft** is to:
 
 1. **Learn and Explore**:
     - Understand and implement the core components of a neural network library, including:
